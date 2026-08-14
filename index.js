@@ -58,8 +58,16 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
+    if (!process.env.VERCEL) {
+      app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
+    } else {
+      console.log(`Server connected to DB on Vercel environment`);
+    }
   } catch (error) {
     console.error("Unable to start server:", error);
+    process.exit(1);
   }
 };
 
