@@ -1,154 +1,112 @@
 const Service = require("../models/serviceModel");
 
-const ACTIVE_SERVICE_FILTER = {
-  isActive: true,
-};
-
-const escapeRegularExpression = (value = "") => {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-};
-
-const formatService = (service) => {
-  return {
-    id: service.serviceCode,
-    serviceCode: service.serviceCode,
-    slug: service.slug,
-    title: service.title,
-    shortDescription: service.shortDescription,
-    fullDescription: service.fullDescription,
-    category: service.category,
-    consultationMode: service.consultationMode,
-    duration: service.duration,
-    startingPrice: service.startingPrice,
-    iconKey: service.iconKey,
-    isPopular: service.isPopular,
-    features: service.features,
-  };
-};
-
-const getServices = async (req, res) => {
+exports.getAllServices = async (req, res) => {
   try {
-    const { search = "", category = "", mode = "", popular = "" } = req.query;
+    const services = await Service.find().sort({ createdAt: 1 });
+    res.status(200).json({ success: true, data: services });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    const query = {
-      ...ACTIVE_SERVICE_FILTER,
+exports.getActiveServices = async (req, res) => {
+  try {
+    const services = await Service.find({ isActive: true }).sort({ createdAt: 1 });
+    res.status(200).json({ success: true, data: services });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getServiceById = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ success: false, message: "Service not found" });
+    }
+    res.status(200).json({ success: true, data: service });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.createService = async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    
+    const latestService = await Service.findOne({
+      serviceId: new RegExp(`^SWY/${currentYear}/`, "i")
+    }).sort({ createdAt: -1 });
+
+    let nextNumber = 1;
+    
+    if (latestService && latestService.serviceId) {
+      const parts = latestService.serviceId.split('/');
+      if (parts.length === 3) {
+        const lastNum = parseInt(parts[2], 10);
+        if (!isNaN(lastNum)) {
+          nextNumber = lastNum + 1;
+        }
+      }
+    }
+
+    const generatedServiceId = `SWY/${currentYear}/${nextNumber.toString().padStart(2, '0')}`;
+
+    const serviceData = {
+      ...req.body,
+      serviceId: generatedServiceId
     };
 
-    const cleanSearch = String(search).trim();
-
-    if (cleanSearch) {
-      const searchExpression = new RegExp(
-        escapeRegularExpression(cleanSearch),
-        "i",
-      );
-
-      query.$or = [
-        {
-          title: searchExpression,
-        },
-        {
-          shortDescription: searchExpression,
-        },
-        {
-          fullDescription: searchExpression,
-        },
-        {
-          category: searchExpression,
-        },
-        {
-          features: searchExpression,
-        },
-      ];
-    }
-
-    if (category && category !== "All") {
-      query.category = String(category).trim();
-    }
-
-    if (mode && mode !== "All Modes") {
-      query.consultationMode = String(mode).trim();
-    }
-
-    if (popular === "true") {
-      query.isPopular = true;
-    }
-
-    const [services, categories] = await Promise.all([
-      Service.find(query)
-        .sort({
-          isPopular: -1,
-          serviceCode: 1,
-        })
-        .lean(),
-
-      Service.distinct("category", ACTIVE_SERVICE_FILTER),
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      count: services.length,
-
-      services: services.map(formatService),
-
-      filters: {
-        categories: ["All", ...categories.sort()],
-
-        modes: ["All Modes", "Clinic", "Video", "Home Sample"],
-      },
-    });
+    const service = await Service.create(serviceData);
+    res.status(201).json({ success: true, data: service });
   } catch (error) {
-    console.error("Get services error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Unable to fetch healthcare services",
-    });
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: "Service ID already exists" });
+    }
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-const getServiceByIdentifier = async (req, res) => {
+exports.updateService = async (req, res) => {
   try {
-    const identifier = String(req.params.identifier).trim();
-
-    /*
-        Inactive service cannot be opened
-        using service code or slug.
-      */
-    const service = await Service.findOne({
-      ...ACTIVE_SERVICE_FILTER,
-
-      $or: [
-        {
-          serviceCode: identifier,
-        },
-        {
-          slug: identifier.toLowerCase(),
-        },
-      ],
-    }).lean();
-
+    const service = await Service.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
     if (!service) {
-      return res.status(404).json({
-        success: false,
-        message: "Healthcare service not found",
-      });
+      return res.status(404).json({ success: false, message: "Service not found" });
     }
-
-    return res.status(200).json({
-      success: true,
-      service: formatService(service),
-    });
+    res.status(200).json({ success: true, data: service });
   } catch (error) {
-    console.error("Get service details error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Unable to fetch healthcare service details",
-    });
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: "Service ID already exists" });
+    }
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-module.exports = {
-  getServices,
-  getServiceByIdentifier,
+exports.toggleServiceStatus = async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ success: false, message: "Service not found" });
+    }
+    service.isActive = !service.isActive;
+    await service.save();
+    res.status(200).json({ success: true, data: service });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteService = async (req, res) => {
+  try {
+    const service = await Service.findByIdAndDelete(req.params.id);
+    if (!service) {
+      return res.status(404).json({ success: false, message: "Service not found" });
+    }
+    res.status(200).json({ success: true, message: "Service deleted" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };

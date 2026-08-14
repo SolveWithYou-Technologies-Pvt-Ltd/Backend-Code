@@ -12,6 +12,8 @@ const adminServiceRoutes = require("./routes/adminServiceRoutes");
 const clientRoutes = require("./routes/clientRoutes");
 const quoteRoutes = require("./routes/quoteRoutes");
 const JobRoutes = require("./routes/jobRoutes");
+const jobApplicationRoutes = require("./routes/jobApplicationRoutes");
+const proposalRoutes = require("./routes/proposalRoutes");
 
 const connectDB = require("./config/db");
 
@@ -33,18 +35,18 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-
 app.use("/api/services", serviceRoutes);
 app.use("/api/admin/services", adminServiceRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
-app.use("/api/admin/clients",clientRoutes);
-app.use("/api/quotes",quoteRoutes);
+app.use("/api/admin/clients", clientRoutes);
+app.use("/api/quotes", quoteRoutes);
 app.use("/api/jobs", JobRoutes);
+app.use("/api/applications", jobApplicationRoutes);
+app.use("/api/proposals", proposalRoutes);
 
 app.use((error, req, res, next) => {
   console.error("Unhandled server error:", error);
-
   res.status(500).json({
     success: false,
     message: "Internal server error",
@@ -56,13 +58,11 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
   } catch (error) {
     console.error("Unable to start server:", error);
-    process.exit(1);
   }
 };
 
 startServer();
+
+module.exports = app;

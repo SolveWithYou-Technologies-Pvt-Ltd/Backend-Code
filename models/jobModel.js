@@ -26,10 +26,18 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    vacancies: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
     minSalary: {
       type: Number,
     },
     maxSalary: {
+      type: Number,
+    },
+    stipend: {
       type: Number,
     },
     internshipType: {

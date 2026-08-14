@@ -8,6 +8,7 @@ const {
   updateJob,
   toggleJobStatus,
   deleteJob,
+  getJobById
 } = require("../controllers/jobController");
 
 router.get("/public", getActiveJobs);
@@ -15,7 +16,7 @@ router.get("/public", getActiveJobs);
 router.use(verifyToken);
 
 router.route("/").get(getAllJobs).post(createJob);
-router.route("/:id").put(updateJob).delete(deleteJob);
+router.route("/:id").get(getJobById).put(updateJob).delete(deleteJob);
 router.route("/:id/status").patch(toggleJobStatus);
 
 module.exports = router;

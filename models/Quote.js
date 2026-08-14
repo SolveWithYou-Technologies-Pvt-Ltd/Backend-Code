@@ -19,10 +19,20 @@ const quoteSchema = new mongoose.Schema({
     required: true
   },
   service: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Service",
     required: true
   },
+  currency: {
+    type: String,
+    enum: ["INR", "USD"],
+    default: "INR"
+  },
   budget: {
+    type: String,
+    required: false
+  },
+  timeline: {
     type: String,
     required: false
   },
@@ -34,10 +44,25 @@ const quoteSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  referenceLinks: {
+    type: String,
+    required: false
+  },
+  facilities: [{
+    type: String
+  }],
   status: {
     type: String,
     enum: ["Pending", "In Progress", "Completed", "Rejected"],
     default: "Pending"
+  },
+  createdBy: {
+    type: String,
+    default: "User"
+  },
+  creatorEmployeeId: {
+    type: String,
+    default: ""
   }
 }, { timestamps: true });
 
