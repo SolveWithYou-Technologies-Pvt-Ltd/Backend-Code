@@ -2,22 +2,28 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 
-const profilePhotoDirectory = path.join(
-  __dirname,
-  "..",
-  "uploads",
-  "profilepictures"
-);
+const profilePhotoDirectory = process.env.VERCEL
+  ? path.join("/tmp", "uploads", "profilepictures")
+  : path.join(__dirname, "..", "uploads", "profilepictures");
 
-fs.mkdirSync(profilePhotoDirectory, { recursive: true });
+try {
+  fs.mkdirSync(profilePhotoDirectory, { recursive: true });
+} catch (error) {
+  console.error("Directory creation error:", error);
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
+    try {
+      if (!fs.existsSync(profilePhotoDirectory)) {
+        fs.mkdirSync(profilePhotoDirectory, { recursive: true });
+      }
+    } catch (err) {}
     callback(null, profilePhotoDirectory);
   },
   filename: (req, file, callback) => {
     const extension = path.extname(file.originalname).toLowerCase() || ".jpg";
-    const uniqueName = `profile-${req.userId}-${Date.now()}${extension}`;
+    const uniqueName = `profile-${req.userId || "user"}-${Date.now()}${extension}`;
 
     callback(null, uniqueName);
   },
