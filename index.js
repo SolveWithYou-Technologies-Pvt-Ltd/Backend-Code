@@ -15,6 +15,12 @@ const JobRoutes = require("./routes/jobRoutes");
 const jobApplicationRoutes = require("./routes/jobApplicationRoutes");
 const proposalRoutes = require("./routes/proposalRoutes");
 
+
+const allowedOrigins = [
+    'https://www.solvewithyou.in',
+    'http://localhost:5173'
+];
+
 const connectDB = require("./config/db");
 
 const app = express();
@@ -22,11 +28,11 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(cors({
-  origin: "*", 
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
