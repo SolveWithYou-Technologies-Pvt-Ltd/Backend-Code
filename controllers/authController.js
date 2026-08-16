@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const User = require("../models/userModel");
 const generateToken = require("../utils/generateToken");
+const { sendWelcomeEmail, sendProfileUpdateEmail } = require("../services/emails/userEmails");
 
 const profileFields = [
   "fullName",
@@ -112,6 +113,8 @@ const registerUser = async (req, res) => {
     });
 
     const token = generateToken(user._id.toString());
+
+    sendWelcomeEmail(user.email, user.fullName).catch(() => {});
 
     return res.status(201).json({
       success: true,
@@ -316,6 +319,8 @@ const updateUserProfile = async (req, res) => {
     }
 
     await user.save();
+
+    sendProfileUpdateEmail(user.email, user.fullName).catch(() => {});
 
     if (req.file && previousProfilePhoto) {
       removeStoredProfilePhoto(previousProfilePhoto);

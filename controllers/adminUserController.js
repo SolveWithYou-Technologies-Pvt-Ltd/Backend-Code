@@ -3,6 +3,15 @@ const mongoose = require("mongoose");
 const AdminUser = require("../models/AdminUser");
 
 const {
+  sendUserCreatedEmail,
+  sendUserUpdatedEmail,
+  sendUserRoleChangeEmail,
+  sendUserPermissionsUpdatedEmail,
+  sendUserStatusUpdatedEmail,
+  sendUserDeletedEmail,
+} = require("../services/emails/adminEmailSender");
+
+const {
   getOrganizationTree,
   getReportingManagerOptions,
   reassignDirectReports,
@@ -42,14 +51,6 @@ const canManageRole = (
     return false;
   }
 
-  /*
-    Admin accounts can only be managed by superadmin.
-
-    Employee accounts are controlled by employees.*
-    permissions, so superadmin, admin or employee may
-    manage them after permission middleware approves
-    the requested action.
-  */
   if (targetRole === "admin") {
     return (
       currentUser.role ===
@@ -390,6 +391,7 @@ const listReportingManagers = async (
   }
 };
 
+// 1. createUser
 const createUser = (targetRole) => {
   return async (req, res) => {
     try {
@@ -476,11 +478,6 @@ const createUser = (targetRole) => {
           targetRole
         );
 
-      /*
-        Registration intentionally stores only account
-        information. Remaining profile fields stay empty
-        until the user edits their own profile.
-      */
       const user = new AdminUser({
         fullName:
           fullName.trim(),
@@ -517,6 +514,9 @@ const createUser = (targetRole) => {
       );
 
       await user.save();
+
+      // Send Email Notification with password included
+      sendUserCreatedEmail(user.email, user.fullName, targetRole, employeeCode, password);
 
       const populatedUser =
         await getManagedUser(
@@ -576,6 +576,7 @@ const createUser = (targetRole) => {
   };
 };
 
+// 2. editUser
 const editUser = (targetRole) => {
   return async (req, res) => {
     try {
@@ -706,10 +707,6 @@ const editUser = (targetRole) => {
         }
       );
 
-      /*
-        Nested subdocuments are marked manually so older
-        Mongoose versions also persist every change.
-      */
       if (
         Object.prototype.hasOwnProperty.call(
           payload,
@@ -747,13 +744,6 @@ const editUser = (targetRole) => {
           String(payload.password);
       }
 
-      /*
-        Profile details and permissions are updated from
-        the same Edit page.
-
-        Backend sanitization ensures the current account
-        cannot assign permissions that it does not have.
-      */
       if (
         Object.prototype.hasOwnProperty.call(
           payload,
@@ -793,13 +783,6 @@ const editUser = (targetRole) => {
           ""
         );
 
-      /*
-        Validate the reporting manager only when the user
-        actually selected a different manager.
-
-        This keeps old accounts updateable even when their
-        current manager is missing or inactive.
-      */
       if (
         reportingManagerProvided &&
         requestedManagerId &&
@@ -835,6 +818,9 @@ const editUser = (targetRole) => {
       );
 
       await user.save();
+
+      // Send Email Notification
+      sendUserUpdatedEmail(user.email, user.fullName);
 
       const populatedUser =
         await getManagedUser(
@@ -900,6 +886,7 @@ const editUser = (targetRole) => {
   };
 };
 
+// 3. changeManagedUserRole
 const changeManagedUserRole = (
   currentRole
 ) => {
@@ -982,10 +969,6 @@ const changeManagedUserRole = (
       const previousRole =
         user.role;
 
-      /*
-        Keep only permissions valid for the new role.
-        Existing employee-management permissions remain.
-      */
       user.permissions =
         AdminUser.sanitizeAssignedPermissions(
           user.permissions,
@@ -1002,6 +985,9 @@ const changeManagedUserRole = (
       );
 
       await user.save();
+
+      // Send Email Notification
+      sendUserRoleChangeEmail(user.email, user.fullName, previousRole, newRole);
 
       const updatedUser =
         await populateManagedUser(
@@ -1056,6 +1042,7 @@ const changeManagedUserRole = (
   };
 };
 
+// 4. updateUserPermissions
 const updateUserPermissions = (
   targetRole
 ) => {
@@ -1103,6 +1090,9 @@ const updateUserPermissions = (
 
       await user.save();
 
+      // Send Email Notification
+      sendUserPermissionsUpdatedEmail(user.email, user.fullName);
+
       const populatedUser =
         await getManagedUser(
           user._id,
@@ -1132,6 +1122,7 @@ const updateUserPermissions = (
   };
 };
 
+// 5. updateUserStatus
 const updateUserStatus = (
   targetRole
 ) => {
@@ -1199,6 +1190,9 @@ const updateUserStatus = (
 
       await user.save();
 
+      // Send Email Notification
+      sendUserStatusUpdatedEmail(user.email, user.fullName, user.isActive);
+
       const populatedUser =
         await getManagedUser(
           user._id,
@@ -1231,6 +1225,7 @@ const updateUserStatus = (
   };
 };
 
+// 6. deleteUser
 const deleteUser = (targetRole) => {
   return async (req, res) => {
     try {
@@ -1288,6 +1283,9 @@ const deleteUser = (targetRole) => {
       );
 
       await user.save();
+
+      // Send Email Notification
+      sendUserDeletedEmail(user.email, user.fullName);
 
       return res.status(200).json({
         success: true,

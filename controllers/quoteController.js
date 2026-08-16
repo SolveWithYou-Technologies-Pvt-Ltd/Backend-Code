@@ -1,6 +1,11 @@
 const Quote = require("../models/Quote");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
+const {
+  sendQuoteCreatedEmail,
+  sendQuoteUpdatedEmail,
+  sendQuoteDeletedEmail,
+} = require("../services/emails/quoteEmailSender");
 
 exports.createQuote = async (req, res) => {
   try {
@@ -24,6 +29,8 @@ exports.createQuote = async (req, res) => {
     const timestampSlice = Date.now().toString().slice(-6);
     const generatedQuoteId = `QT-${timestampSlice}-${randomSuffix}`;
 
+    const finalCreatedBy = createdBy || "User";
+
     const newQuote = new Quote({
       quoteId: generatedQuoteId,
       fullName,
@@ -37,11 +44,14 @@ exports.createQuote = async (req, res) => {
       projectDescription,
       referenceLinks,
       facilities,
-      createdBy: createdBy || "User",
+      createdBy: finalCreatedBy,
       creatorEmployeeId: creatorEmployeeId || ""
     });
 
     await newQuote.save();
+
+    // Send email with user/admin source tracking
+    sendQuoteCreatedEmail(email, fullName, generatedQuoteId, service, finalCreatedBy);
 
     res.status(201).json({
       success: true,
@@ -88,48 +98,42 @@ exports.getAllQuotes = async (req, res) => {
 
 exports.getUserQuotes = async (req, res) => {
   try {
-    let userId = null;
+    let userEmail = req.query.email && req.query.email !== "undefined" && req.query.email !== "" ? req.query.email : null;
+    let userPhone = req.query.phone && req.query.phone !== "undefined" && req.query.phone !== "" ? req.query.phone : null;
 
-    // 1. Safely Extract User ID from token or middleware
-    if (req.user && (req.user.id || req.user._id)) {
-      userId = req.user.id || req.user._id;
-    } else if (req.userId) {
-      userId = req.userId;
-    } else {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        const token = authHeader.split(" ")[1];
-        const decoded = jwt.decode(token);
-        if (decoded) {
-          userId = decoded.id || decoded._id || decoded.userId;
+    if (!userEmail && !userPhone) {
+      let userId = null;
+
+      if (req.user && (req.user.id || req.user._id)) {
+        userId = req.user.id || req.user._id;
+      } else if (req.userId) {
+        userId = req.userId;
+      } else {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.split(" ")[1];
+          const decoded = jwt.decode(token);
+          if (decoded) {
+            userId = decoded.id || decoded._id || decoded.userId;
+          }
+        }
+      }
+
+      if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+        const db = mongoose.connection.db;
+        const userDoc = await db.collection("users").findOne({ _id: new mongoose.Types.ObjectId(userId) });
+        
+        if (userDoc) {
+          userEmail = userDoc.email;
+          userPhone = userDoc.phone || userDoc.phoneNumber;
         }
       }
     }
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized: Token ID missing" });
-    }
-
-    let userEmail = null;
-    let userPhone = null;
-
-    // 2. Fetch User directly using Native MongoDB driver (Prevents Model import path crash)
-    if (mongoose.Types.ObjectId.isValid(userId)) {
-      const db = mongoose.connection.db;
-      const userDoc = await db.collection("users").findOne({ _id: new mongoose.Types.ObjectId(userId) });
-      
-      if (userDoc) {
-        userEmail = userDoc.email;
-        userPhone = userDoc.phone || userDoc.phoneNumber;
-      }
-    }
-
-    // If User has no email and phone, return empty list
     if (!userEmail && !userPhone) {
       return res.status(200).json({ success: true, data: [] });
     }
 
-    // 3. Match Quotes with User Email or Phone
     const query = { $or: [] };
     if (userEmail) query.$or.push({ email: userEmail });
     if (userPhone) query.$or.push({ phoneNumber: userPhone });
@@ -140,7 +144,6 @@ exports.getUserQuotes = async (req, res) => {
 
     res.status(200).json({ success: true, data: quotes });
   } catch (error) {
-    console.error("GET_USER_QUOTES_CRASH:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -165,9 +168,13 @@ exports.updateQuoteStatus = async (req, res) => {
       { status },
       { new: true, runValidators: true }
     ).populate("service", "title serviceId");
+    
     if (!quote) {
       return res.status(404).json({ success: false, message: "Quote not found" });
     }
+
+    sendQuoteUpdatedEmail(quote.email, quote.fullName, quote.quoteId, quote.status);
+
     res.status(200).json({ success: true, data: quote });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -180,9 +187,13 @@ exports.updateQuote = async (req, res) => {
       new: true,
       runValidators: true,
     }).populate("service", "title serviceId");
+    
     if (!quote) {
       return res.status(404).json({ success: false, message: "Quote not found" });
     }
+
+    sendQuoteUpdatedEmail(quote.email, quote.fullName, quote.quoteId, quote.status);
+
     res.status(200).json({ success: true, data: quote });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -192,9 +203,13 @@ exports.updateQuote = async (req, res) => {
 exports.deleteQuote = async (req, res) => {
   try {
     const quote = await Quote.findByIdAndDelete(req.params.id);
+    
     if (!quote) {
       return res.status(404).json({ success: false, message: "Quote not found" });
     }
+
+    sendQuoteDeletedEmail(quote.email, quote.fullName, quote.quoteId);
+
     res.status(200).json({ success: true, message: "Quote deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -2,7 +2,7 @@ const AdminUser = require("../models/AdminUser");
 
 const EmployeeIdCounter = require("../models/EmployeeIdCounter");
 
-const EMPLOYEE_ID_PREFIX = "EMP";
+const EMPLOYEE_ID_PREFIX = "SWY";
 
 const formatEmployeeId = ( year, sequence) => {
   return [

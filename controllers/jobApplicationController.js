@@ -1,11 +1,22 @@
 const JobApplication = require("../models/jobApplicationModel");
+const {
+  sendApplicationSubmittedEmail,
+  sendApplicationUpdatedEmail,
+  sendApplicationDeletedEmail,
+} = require("../services/emails/jobApplicationEmailSender");
 
 exports.submitApplication = async (req, res) => {
   try {
     const applicationId = "APP-" + Date.now().toString().slice(-4) + Math.floor(1000 + Math.random() * 9000);
-    const applicationData = { ...req.body, applicationId };
+    const finalCreatedBy = req.body.createdBy || "User";
+    const applicationData = { ...req.body, applicationId, createdBy: finalCreatedBy };
     
     const application = await JobApplication.create(applicationData);
+
+    if (application.email) {
+      sendApplicationSubmittedEmail(application.email, application.fullName || "Candidate", applicationId, finalCreatedBy);
+    }
+
     res.status(201).json({ success: true, data: application });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -46,6 +57,11 @@ exports.updateApplicationStatus = async (req, res) => {
     if (!application) {
       return res.status(404).json({ success: false, message: "Application not found" });
     }
+
+    if (application.email) {
+      sendApplicationUpdatedEmail(application.email, application.fullName || "Candidate", application.applicationId, application.status);
+    }
+
     res.status(200).json({ success: true, data: application });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -58,6 +74,11 @@ exports.deleteApplication = async (req, res) => {
     if (!application) {
       return res.status(404).json({ success: false, message: "Application not found" });
     }
+
+    if (application.email) {
+      sendApplicationDeletedEmail(application.email, application.fullName || "Candidate", application.applicationId);
+    }
+
     res.status(200).json({ success: true, message: "Application deleted" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

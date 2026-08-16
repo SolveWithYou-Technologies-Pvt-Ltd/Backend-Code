@@ -14,6 +14,10 @@ const quoteRoutes = require("./routes/quoteRoutes");
 const JobRoutes = require("./routes/jobRoutes");
 const jobApplicationRoutes = require("./routes/jobApplicationRoutes");
 const proposalRoutes = require("./routes/proposalRoutes");
+const clientProjectRoutes = require("./routes/clientProjectRoutes");
+const ticketRoutes = require("./routes/ticketRoutes");
+const userDashboardRoutes = require("./routes/userDashboardRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 
 const allowedOrigins = [
@@ -30,7 +34,7 @@ app.set("trust proxy", 1);
 app.use(cors({
     origin: allowedOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS']
 }));
 
 app.use(express.json());
@@ -55,7 +59,10 @@ app.use("/api/quotes", quoteRoutes);
 app.use("/api/jobs", JobRoutes);
 app.use("/api/applications", jobApplicationRoutes);
 app.use("/api/proposals", proposalRoutes);
-
+app.use("/api/clientprojects", clientProjectRoutes);
+app.use("/api/tickets", ticketRoutes);
+app.use("/api/user-dashboard", userDashboardRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.use((error, req, res, next) => {
   console.error("Unhandled server error:", error);
   res.status(500).json({

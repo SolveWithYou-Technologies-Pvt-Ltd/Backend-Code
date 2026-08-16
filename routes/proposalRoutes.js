@@ -4,6 +4,7 @@ const verifyToken = require("../middleware/authMiddleware");
 const { 
   createProposal, 
   getAllProposals,
+  getUserProposals,
   getProposalById,
   getProposalByQuoteId,
   updateProposalStatus,
@@ -11,10 +12,16 @@ const {
   deleteProposal
 } = require("../controllers/proposalController");
 
+router.get("/user/me", getUserProposals);
+router.get("/quote/:quoteId", getProposalByQuoteId);
+
 router.use(verifyToken);
-router.route("/").get(getAllProposals).post(createProposal);
-router.route("/:id").get(getProposalById).put(updateProposal).delete(deleteProposal);
-router.route("/quote/:quoteId").get(getProposalByQuoteId);
-router.route("/:id/status").patch(updateProposalStatus);
+
+router.get("/", getAllProposals);
+router.post("/", createProposal);
+router.get("/:id", getProposalById);
+router.put("/:id", updateProposal);
+router.delete("/:id", deleteProposal);
+router.patch("/:id/status", updateProposalStatus);
 
 module.exports = router;
