@@ -18,7 +18,7 @@ const clientProjectRoutes = require("./routes/clientProjectRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
 const userDashboardRoutes = require("./routes/userDashboardRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-
+const transactionRoutes = require("./routes/transactionRoutes");
 
 const allowedOrigins = [
     'https://www.solvewithyou.in',
@@ -63,6 +63,7 @@ app.use("/api/clientprojects", clientProjectRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/user-dashboard", userDashboardRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/transactions", transactionRoutes);
 app.use((error, req, res, next) => {
   console.error("Unhandled server error:", error);
   res.status(500).json({

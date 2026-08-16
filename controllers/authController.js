@@ -2,7 +2,12 @@ const fs = require("fs");
 const path = require("path");
 const User = require("../models/userModel");
 const generateToken = require("../utils/generateToken");
-const { sendWelcomeEmail, sendProfileUpdateEmail } = require("../services/emails/userEmails");
+const { 
+  sendClientRegisteredEmail, 
+  sendClientUpdatedEmail, 
+  sendClientStatusChangedEmail, 
+  sendClientDeletedEmail 
+} = require("../services/emails/clientEmailSender");
 
 const profileFields = [
   "fullName",
@@ -114,7 +119,7 @@ const registerUser = async (req, res) => {
 
     const token = generateToken(user._id.toString());
 
-    sendWelcomeEmail(user.email, user.fullName).catch(() => {});
+    sendClientRegisteredEmail(user.email, user.fullName, "User").catch(() => {});
 
     return res.status(201).json({
       success: true,
@@ -320,7 +325,7 @@ const updateUserProfile = async (req, res) => {
 
     await user.save();
 
-    sendProfileUpdateEmail(user.email, user.fullName).catch(() => {});
+    sendClientUpdatedEmail(user.email, user.fullName, "User").catch(() => {});
 
     if (req.file && previousProfilePhoto) {
       removeStoredProfilePhoto(previousProfilePhoto);
@@ -620,6 +625,8 @@ const createAdminClient = async (req, res) => {
       isDeleted: false,
     });
 
+    sendClientRegisteredEmail(client.email, client.fullName, "Admin").catch(() => {});
+
     return res.status(201).json({
       success: true,
       message: "Client created successfully",
@@ -726,6 +733,8 @@ const updateAdminClient = async (req, res) => {
       User.findById(client._id).select("-password -__v")
     );
 
+    sendClientUpdatedEmail(updatedClient.email, updatedClient.fullName, "Admin").catch(() => {});
+
     return res.status(200).json({
       success: true,
       message: "Client updated successfully",
@@ -783,6 +792,8 @@ const changeAdminClientStatus = async (req, res) => {
       User.findById(client._id).select("-password -__v")
     );
 
+    sendClientStatusChangedEmail(updatedClient.email, updatedClient.fullName, isActive).catch(() => {});
+
     return res.status(200).json({
       success: true,
       message: isActive ? "Client activated successfully" : "Client deactivated successfully",
@@ -817,6 +828,8 @@ const deleteAdminClient = async (req, res) => {
     client.deactivatedBy = client.deactivatedBy || req.userId;
 
     await client.save();
+
+    sendClientDeletedEmail(client.email, client.fullName).catch(() => {});
 
     return res.status(200).json({
       success: true,

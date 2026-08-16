@@ -1,5 +1,6 @@
 const Proposal = require("../models/Proposal");
 const Quote = require("../models/Quote");
+const ClientProject = require("../models/ClientProject");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const {
@@ -97,10 +98,17 @@ exports.getAllProposals = async (req, res) => {
 
     const proposals = await Proposal.find(query)
       .populate("quote", "quoteId fullName email phoneNumber projectTitle")
-      .select("proposalId title totalCost validUntil status createdBy creatorEmployeeId createdAt quote")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ success: true, data: proposals });
+    const proposalsWithProjectStatus = await Promise.all(proposals.map(async (prop) => {
+      const projectExists = await ClientProject.findOne({ proposal: prop._id }).select("_id");
+      return {
+        ...prop.toObject(),
+        hasProject: !!projectExists
+      };
+    }));
+
+    res.status(200).json({ success: true, data: proposalsWithProjectStatus });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
