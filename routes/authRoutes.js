@@ -1,4 +1,5 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const {
   registerUser,
   loginUser,
@@ -16,6 +17,17 @@ const uploadProfilePhoto = require("../middleware/profilePhotoUpload");
 const { requirePermission, requireAnyPermission } = require("../middleware/permissionMiddleware");
 
 const router = express.Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    message: "Too many login requests from this IP Please try again after 15 minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 router.get("/admin/users", verifyToken, requirePermission("clients", "view"), getAdminClients);
 router.post("/admin/users", verifyToken, requirePermission("clients", "create"), createAdminClient);
@@ -48,7 +60,7 @@ router.delete(
 );
 
 router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/login", loginLimiter, loginUser);
 router.get("/me", verifyToken, getCurrentUser);
 router.put("/profile", verifyToken, uploadProfilePhoto, updateUserProfile);
 

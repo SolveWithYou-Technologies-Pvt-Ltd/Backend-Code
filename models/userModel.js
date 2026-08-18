@@ -75,6 +75,14 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "Password must contain at least 6 characters"],
       select: false,
     },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    },
     isActive: {
       type: Boolean,
       default: true,

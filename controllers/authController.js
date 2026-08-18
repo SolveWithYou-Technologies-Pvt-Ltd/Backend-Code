@@ -137,6 +137,7 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
+    // console.log(`Login attempt received from IP: ${req.ip}`);
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -171,14 +172,42 @@ const loginUser = async (req, res) => {
       });
     }
 
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
+      return res.status(423).json({
+        success: false,
+        message: `Account locked due to 3 failed login attempts. Please try again after ${remainingMinutes} minute(s).`,
+      });
+    }
+
     const passwordMatches = await user.comparePassword(password);
 
     if (!passwordMatches) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      if (user.failedLoginAttempts >= 3) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        user.failedLoginAttempts = 0;
+        await user.save();
+
+        return res.status(423).json({
+          success: false,
+          message: "Account locked for 15 minutes due to 3 incorrect password attempts.",
+        });
+      }
+
+      await user.save();
+      const remainingAttempts = 3 - user.failedLoginAttempts;
+
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: `Invalid email or password. ${remainingAttempts} attempt(s) remaining before account lockout.`,
       });
     }
+
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    await user.save();
 
     const token = generateToken(user._id.toString());
 
