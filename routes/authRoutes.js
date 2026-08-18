@@ -1,5 +1,7 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
+const { RedisStore } = require("rate-limit-redis");
+const redisClient = require("../config/redis");
 const {
   registerUser,
   loginUser,
@@ -27,6 +29,10 @@ const loginLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+    prefix: "rl:login:",
+  }),
 });
 
 router.get("/admin/users", verifyToken, requirePermission("clients", "view"), getAdminClients);
