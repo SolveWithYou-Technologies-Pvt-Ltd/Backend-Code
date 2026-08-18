@@ -89,10 +89,15 @@ app.use((error, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
+let isDbConnected = false;
 
 const startServer = async () => {
   try {
-    await connectDB();
+    if (!isDbConnected) {
+      await connectDB();
+      isDbConnected = true;
+    }
+
     if (!process.env.VERCEL) {
       app.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
@@ -102,7 +107,6 @@ const startServer = async () => {
     }
   } catch (error) {
     console.error("Unable to start server:", error);
-    process.exit(1);
   }
 };
 
