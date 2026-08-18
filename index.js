@@ -22,7 +22,8 @@ const transactionRoutes = require("./routes/transactionRoutes");
 
 const allowedOrigins = [
     'https://www.solvewithyou.in',
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'https://apka-deployed-frontend-url.vercel.app',
 ];
 
 const connectDB = require("./config/db");
