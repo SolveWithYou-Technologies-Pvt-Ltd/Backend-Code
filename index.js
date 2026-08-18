@@ -21,9 +21,10 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 
 const allowedOrigins = [
-    'https://www.solvewithyou.in',
-    'http://localhost:5173',
-    'https://apka-deployed-frontend-url.vercel.app',
+  "https://www.solvewithyou.in",
+  "https://solvewithyou.in",
+  "http://localhost:5173",
+  "http://localhost:8000",
 ];
 
 const connectDB = require("./config/db");
@@ -46,7 +47,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Express server is running",
+    message: "Backend server is running",
   });
 });
 
@@ -73,7 +74,7 @@ app.use((error, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 const startServer = async () => {
   try {
