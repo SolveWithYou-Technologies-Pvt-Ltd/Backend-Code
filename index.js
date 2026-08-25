@@ -19,38 +19,23 @@ const ticketRoutes = require("./routes/ticketRoutes");
 const userDashboardRoutes = require("./routes/userDashboardRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
+
+const allowedOrigins = [
+    'https://www.solvewithyou.in',
+    'http://localhost:5173',
+];
+
 const connectDB = require("./config/db");
 
 const app = express();
 
 app.set("trust proxy", 1);
 
-const allowedOrigins = [
-  "https://www.solvewithyou.in",
-  "https://solvewithyou.in",
-  "http://localhost:5173",
-  "http://localhost:3000",
-];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".vercel.app") ||
-        (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL)
-      ) {
-        callback(null, true);
-      } else {
-        callback(null, true);
-      }
-    },
+app.use(cors({
+    origin: allowedOrigins,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS']
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -80,6 +65,10 @@ app.use("/api/user-dashboard", userDashboardRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/transactions", transactionRoutes);
 
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'client', 'dist', 'index.html'));
+});
+
 app.use((error, req, res, next) => {
   console.error("Unhandled server error:", error);
   res.status(500).json({
@@ -89,24 +78,20 @@ app.use((error, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-let isDbConnected = false;
 
 const startServer = async () => {
   try {
-    if (!isDbConnected) {
-      await connectDB();
-      isDbConnected = true;
-    }
-
+    await connectDB();
     if (!process.env.VERCEL) {
       app.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
       });
     } else {
-      console.log("Server connected to DB on Vercel environment");
+      console.log(`Server connected to DB on Vercel environment`);
     }
   } catch (error) {
     console.error("Unable to start server:", error);
+    process.exit(1);
   }
 };
 
