@@ -6,12 +6,14 @@ const {
   getAllApplications,
   getApplicationById,
   updateApplicationStatus,
-  deleteApplication
+  deleteApplication,
+  getUniqueAppliedRoles
 } = require("../controllers/jobApplicationController");
 
 router.post("/", submitApplication);
 
 router.use(verifyToken);
+router.route("/roles").get(getUniqueAppliedRoles);
 router.route("/").get(getAllApplications);
 router.route("/:id").get(getApplicationById).delete(deleteApplication);
 router.route("/:id/status").patch(updateApplicationStatus);
