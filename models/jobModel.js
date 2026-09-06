@@ -31,11 +31,20 @@ const jobSchema = new mongoose.Schema(
       required: true,
       default: 1,
     },
+    compensationType: {
+      type: String,
+      enum: ["Salary", "Commission"],
+      default: "Salary",
+    },
     minSalary: {
       type: Number,
     },
     maxSalary: {
       type: Number,
+    },
+    commissionPercentage: {
+      type: String,
+      trim: true,
     },
     stipend: {
       type: Number,
