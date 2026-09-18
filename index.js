@@ -39,7 +39,8 @@ const corsOptions = {
 app.set("trust proxy", 1);
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+
+app.options(/(.*)/, cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -69,7 +70,7 @@ app.use("/api/user-dashboard", userDashboardRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/transactions", transactionRoutes);
 
-app.get(/.*/, (req, res) => {
+app.get(/(.*)/, (req, res) => {
   res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
 });
 
