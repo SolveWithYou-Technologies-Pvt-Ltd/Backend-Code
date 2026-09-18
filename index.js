@@ -20,11 +20,17 @@ const userDashboardRoutes = require("./routes/userDashboardRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 
-const allowedOrigins = [
-    'https://www.solvewithyou.in',
-    'https://solvewithyou.in',
-    'http://localhost:5173',
-];
+const corsOptions = {
+  origin: [
+    "https://www.solvewithyou.in",
+    "https://solvewithyou.in",
+    "http://localhost:5173",
+    "http://localhost:3000",
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
 
 const connectDB = require("./config/db");
 
@@ -32,11 +38,7 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-app.use(cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS']
-}));
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
