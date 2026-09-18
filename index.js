@@ -31,7 +31,7 @@ const corsOptions = {
     "http://localhost:3000",
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -39,6 +39,7 @@ const corsOptions = {
 app.set("trust proxy", 1);
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
