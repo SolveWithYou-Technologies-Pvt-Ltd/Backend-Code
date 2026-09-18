@@ -39,7 +39,6 @@ const corsOptions = {
 app.set("trust proxy", 1);
 
 app.use(cors(corsOptions));
-
 app.options(/(.*)/, cors(corsOptions));
 
 app.use(express.json());
@@ -70,7 +69,8 @@ app.use("/api/user-dashboard", userDashboardRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/transactions", transactionRoutes);
 
-app.use('*', (req, res) => {
+// YAHAN FIX KIYA HAI: app.use('*') ko hata kar sirf app.use() kar diya hai
+app.use((req, res, next) => {
   res.status(404).json({
     success: false,
     message: "API route not found"
@@ -78,6 +78,7 @@ app.use('*', (req, res) => {
 });
 
 app.use((error, req, res, next) => {
+  console.error("Unhandled server error:", error);
   res.status(500).json({
     success: false,
     message: "Internal server error",
