@@ -22,6 +22,7 @@ const transactionRoutes = require("./routes/transactionRoutes");
 
 const allowedOrigins = [
     'https://www.solvewithyou.in',
+    'https://solvewithyou.in',
     'http://localhost:5173',
 ];
 
