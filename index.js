@@ -19,6 +19,9 @@ const ticketRoutes = require("./routes/ticketRoutes");
 const userDashboardRoutes = require("./routes/userDashboardRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
+const connectDB = require("./config/db");
+
+const app = express();
 
 const corsOptions = {
   origin: [
@@ -30,11 +33,8 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
+  optionsSuccessStatus: 200
 };
-
-const connectDB = require("./config/db");
-
-const app = express();
 
 app.set("trust proxy", 1);
 
@@ -69,7 +69,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/transactions", transactionRoutes);
 
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.resolve(__dirname, 'client', 'dist', 'index.html'));
+  res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
 });
 
 app.use((error, req, res, next) => {
