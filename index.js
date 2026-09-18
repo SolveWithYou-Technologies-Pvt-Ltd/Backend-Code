@@ -74,7 +74,6 @@ app.get(/.*/, (req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  console.error("Unhandled server error:", error);
   res.status(500).json({
     success: false,
     message: "Internal server error",
@@ -83,22 +82,18 @@ app.use((error, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-const startServer = async () => {
-  try {
-    await connectDB();
-    if (!process.env.VERCEL) {
-      app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
-      });
-    } else {
-      console.log(`Server connected to DB on Vercel environment`);
-    }
-  } catch (error) {
-    console.error("Unable to start server:", error);
-    process.exit(1);
-  }
-};
+connectDB()
+  .then(() => {
+    console.log("Database Connected Successfully");
+  })
+  .catch((error) => {
+    console.error("Database connection failed:", error.message);
+  });
 
-startServer();
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;
