@@ -69,7 +69,7 @@ app.use("/api/user-dashboard", userDashboardRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/transactions", transactionRoutes);
 
-// YAHAN FIX KIYA HAI: app.use('*') ko hata kar sirf app.use() kar diya hai
+// Safe 404 handler (Bina kisi string path ke)
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -77,6 +77,7 @@ app.use((req, res, next) => {
   });
 });
 
+// Global Error Handler
 app.use((error, req, res, next) => {
   console.error("Unhandled server error:", error);
   res.status(500).json({
