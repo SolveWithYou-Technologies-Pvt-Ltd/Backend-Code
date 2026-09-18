@@ -70,8 +70,11 @@ app.use("/api/user-dashboard", userDashboardRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/transactions", transactionRoutes);
 
-app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "API route not found"
+  });
 });
 
 app.use((error, req, res, next) => {
