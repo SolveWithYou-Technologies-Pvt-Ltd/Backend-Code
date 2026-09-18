@@ -69,7 +69,7 @@ app.use("/api/user-dashboard", userDashboardRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/transactions", transactionRoutes);
 
-// Safe 404 handler (Bina kisi string path ke)
+// Safe 404 handler
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -88,18 +88,22 @@ app.use((error, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-connectDB()
-  .then(() => {
+// Safe Async Startup Function (Fixes the .then() crash)
+const startServer = async () => {
+  try {
+    await connectDB();
     console.log("Database Connected Successfully");
-  })
-  .catch((error) => {
-    console.error("Database connection failed:", error.message);
-  });
+  } catch (error) {
+    console.error("Database connection failed:", error ? error.message : error);
+  }
 
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
+  if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
+};
+
+startServer();
 
 module.exports = app;
